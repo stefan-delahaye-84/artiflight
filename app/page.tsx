@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase-server";
 
+export const dynamic = "force-dynamic";
+
 const CATEGORY_LABELS: Record<string, string> = {
   hiking: "Hiking",
   food: "Food",
