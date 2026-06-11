@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 
 const CATEGORIES = ["hiking", "food", "running", "music", "imaging", "tech"];
 
@@ -16,6 +17,23 @@ export default function UploadPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ url: string; slug: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [fileName, setFileName] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reads the selected .html file as plain text and puts it in the html field.
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result;
+      if (typeof text === "string") setHtml(text);
+    };
+    reader.readAsText(file, "utf-8");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -136,15 +154,44 @@ export default function UploadPage() {
             />
           </Field>
 
-          <Field label="HTML" required>
+          {/* HTML field with file upload button */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                HTML <span className="text-destructive">*</span>
+              </label>
+              <div className="flex items-center gap-2">
+                {fileName && (
+                  <span className="text-xs text-muted-foreground truncate max-w-[160px]">
+                    {fileName}
+                  </span>
+                )}
+                {/* Hidden file input — triggered by the button below */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".html,.htm"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  <Upload size={12} />
+                  Upload HTML file
+                </button>
+              </div>
+            </div>
             <textarea
               value={html}
               onChange={(e) => setHtml(e.target.value)}
               className="input min-h-[240px] resize-y font-mono text-xs"
-              placeholder="Paste the full HTML here…"
+              placeholder="Paste the full HTML here, or upload a file above…"
               required
             />
-          </Field>
+          </div>
 
           <Button type="submit" disabled={status === "loading"} className="w-full">
             {status === "loading" ? "Publishing…" : "Publish artifact"}
