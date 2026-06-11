@@ -29,7 +29,7 @@ export default async function HomePage() {
     <div className="max-w-6xl mx-auto px-4">
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      <div className="py-24 text-center relative">
+      <div className="pt-16 pb-10 text-center relative">
         {/* Ambient glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
           <div
@@ -56,9 +56,8 @@ export default async function HomePage() {
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight">
-            <span className="gradient-text">Publish</span>
-            <br />
+          <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold tracking-tight mb-6 leading-tight whitespace-nowrap">
+            <span className="gradient-text">Publish </span>
             <span style={{ color: "var(--foreground)" }}>AI Artifacts</span>
           </h1>
 
@@ -102,7 +101,7 @@ export default async function HomePage() {
       {/* ── Stats bar ────────────────────────────────────── */}
       <div
         style={{ border: "1px solid var(--border)", background: "var(--border)" }}
-        className="grid grid-cols-3 gap-px rounded-xl overflow-hidden mb-16"
+        className="grid grid-cols-3 gap-px rounded-xl overflow-hidden mb-10"
       >
         {[
           { label: "Artifacts", value: artifacts.length },
@@ -112,12 +111,12 @@ export default async function HomePage() {
           <div
             key={stat.label}
             style={{ background: "var(--surface-1)" }}
-            className="px-6 py-4 text-center"
+            className="px-4 py-3 text-center"
           >
-            <div className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+            <div className="text-lg font-semibold" style={{ color: "var(--foreground)" }}>
               {stat.value}
             </div>
-            <div className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+            <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
               {stat.label}
             </div>
           </div>
@@ -126,7 +125,7 @@ export default async function HomePage() {
 
       {/* ── Gallery ──────────────────────────────────────── */}
       <div className="mb-16">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold" style={{ color: "var(--foreground)" }}>
             Published Artifacts
           </h2>
@@ -206,9 +205,11 @@ function ArtifactCard({ artifact }: { artifact: Artifact }) {
         >
           {artifact.category ?? "artifact"}
         </span>
-        <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-          {artifact.views} views
-        </span>
+        {artifact.views > 0 && (
+          <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+            {artifact.views} views
+          </span>
+        )}
       </div>
 
       {/* Title */}
