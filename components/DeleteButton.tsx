@@ -2,16 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
-export function DeleteButton({ slug }: { slug: string }) {
+export function DeleteButton({ slug, title }: { slug: string; title: string }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [secret, setSecret] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  function reset() {
+    setSecret("");
+    setError("");
+    setLoading(false);
+  }
+
   async function handleDelete() {
+    if (!secret) return;
     setLoading(true);
     setError("");
 
@@ -29,45 +46,51 @@ export function DeleteButton({ slug }: { slug: string }) {
     }
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
+  return (
+    <Dialog onOpenChange={(open) => !open && reset()}>
+      <DialogTrigger
         className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-        title="Delete artifact"
+        title="Verwijder artifact"
       >
         <Trash2 size={13} />
-      </button>
-    );
-  }
+      </DialogTrigger>
 
-  return (
-    <div className="flex items-center gap-1.5">
-      <input
-        type="password"
-        value={secret}
-        onChange={(e) => setSecret(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleDelete()}
-        placeholder="Admin secret"
-        autoFocus
-        className="h-6 rounded border border-input bg-background px-2 text-xs w-32 focus:outline-none focus:ring-1 focus:ring-destructive"
-      />
-      <button
-        onClick={handleDelete}
-        disabled={loading || !secret}
-        className="h-6 rounded bg-destructive px-2 text-xs font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
-      >
-        {loading ? "…" : "Delete"}
-      </button>
-      <button
-        onClick={() => { setOpen(false); setError(""); setSecret(""); }}
-        className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-      >
-        <X size={12} />
-      </button>
-      {error && (
-        <span className="text-xs text-destructive">{error}</span>
-      )}
-    </div>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Artifact verwijderen?</DialogTitle>
+          <DialogDescription>
+            Je staat op het punt <strong className="text-foreground">{title}</strong> te
+            verwijderen. Dit kan niet ongedaan worden gemaakt.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">Admin secret</label>
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleDelete()}
+            placeholder="Voer je ADMIN_SECRET in"
+            autoFocus
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />} onClick={reset}>
+            Annuleer
+          </DialogClose>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={loading || !secret}
+          >
+            {loading ? "Verwijderen…" : "Verwijder"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
