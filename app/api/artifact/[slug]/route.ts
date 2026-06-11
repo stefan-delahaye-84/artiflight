@@ -29,14 +29,31 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { html, note } = await req.json();
-  if (!html) {
-    return NextResponse.json({ error: "html is required" }, { status: 400 });
-  }
+  const body = await req.json();
+  const { html, note, published } = body as {
+    html?: string;
+    note?: string;
+    published?: boolean;
+  };
 
   const supabase = createServerClient();
 
-  // Fetch current artifact to get id and current version count.
+  // --- Publish toggle (no HTML update, no versioning) ---
+  if (published !== undefined && !html) {
+    const { error } = await supabase
+      .from("artifacts")
+      .update({ published, updated_at: new Date().toISOString() })
+      .eq("slug", slug);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, published });
+  }
+
+  // --- HTML update with versioning ---
+  if (!html) {
+    return NextResponse.json({ error: "html or published is required" }, { status: 400 });
+  }
+
   const { data: artifact, error: fetchError } = await supabase
     .from("artifacts")
     .select("id")

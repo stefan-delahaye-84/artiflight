@@ -1,10 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { FileUp } from "lucide-react";
+import { CategoryInput } from "@/components/CategoryInput";
 
-const CATEGORIES = ["hiking", "food", "running", "music", "imaging", "tech"];
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function UploadPage() {
   const [title, setTitle] = useState("");
@@ -17,22 +21,52 @@ export default function UploadPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ url: string; slug: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [published, setPublished] = useState(true);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Counter avoids false drag-leave when pointer moves over a child element.
+  const dragCounter = useRef(0);
 
-  // Reads the selected .html file as plain text and puts it in the html field.
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFileName(file.name);
-
+  function readFile(file: File) {
+    if (!file.name.match(/\.html?$/i)) return;
+    setFileInfo({ name: file.name, size: file.size });
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result;
       if (typeof text === "string") setHtml(text);
     };
     reader.readAsText(file, "utf-8");
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) readFile(file);
+  }
+
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current += 1;
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) setIsDragging(false);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,6 +89,7 @@ export default function UploadPage() {
           tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
           prompt: prompt || undefined,
           html,
+          published,
         }),
       });
 
@@ -75,150 +110,245 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-2xl px-6 py-12">
-        <div className="mb-8">
-          <a href="/" className="text-sm text-muted-foreground hover:text-foreground">
-            ← artiflight
-          </a>
-          <h1 className="mt-4 text-2xl font-semibold">Upload artifact</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Publish a new HTML artifact to your domain.
-          </p>
-        </div>
+    <div className="max-w-2xl mx-auto px-4 py-12">
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <Field label="Admin secret" required>
-            <input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              className="input"
-              placeholder="Your ADMIN_SECRET"
-              required
-            />
-          </Field>
+      {/* Page header */}
+      <div className="mb-10">
+        <a
+          href="/"
+          style={{ color: "var(--accent-color)" }}
+          className="text-sm hover:opacity-80 transition-opacity"
+        >
+          ← artiflight
+        </a>
+        <h1
+          style={{ color: "var(--foreground)" }}
+          className="mt-4 text-2xl font-semibold"
+        >
+          Upload artifact
+        </h1>
+        <p style={{ color: "var(--muted-foreground)" }} className="mt-1 text-sm">
+          Publish a new HTML artifact to your domain.
+        </p>
+      </div>
 
-          <Field label="Title" required>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input"
-              placeholder="Veldbos Field Manual"
-              required
-            />
-          </Field>
+      <form onSubmit={handleSubmit} className="space-y-5">
 
-          <Field label="Description">
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input"
-              placeholder="Short description shown in gallery"
-            />
-          </Field>
+        <Field label="Admin secret" required>
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            className="input"
+            placeholder="Your ADMIN_SECRET"
+            required
+          />
+        </Field>
 
-          <Field label="Category">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="input"
+        <Field label="Title" required>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="input"
+            placeholder="Veldbos Field Manual"
+            required
+          />
+        </Field>
+
+        <Field label="Description">
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="input"
+            placeholder="Short description shown in gallery"
+          />
+        </Field>
+
+        <Field label="Category">
+          <CategoryInput value={category} onChange={setCategory} />
+        </Field>
+
+        <Field label="Tags" hint="Comma-separated">
+          <input
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            className="input"
+            placeholder="koken, snacks, recepten"
+          />
+        </Field>
+
+        <Field label="Prompt" hint="Optional — the Claude prompt used to generate this artifact">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="input min-h-[80px] resize-y"
+            placeholder="Create an interactive field manual for…"
+          />
+        </Field>
+
+        {/* HTML upload + textarea */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <label
+              style={{ color: "var(--foreground)" }}
+              className="text-sm font-medium"
             >
-              <option value="">— none —</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
+              HTML{" "}
+              <span style={{ color: "var(--danger)" }}>*</span>
+            </label>
 
-          <Field label="Tags" hint="Comma-separated">
-            <input
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              className="input"
-              placeholder="koken, snacks, recepten"
-            />
-          </Field>
-
-          <Field label="Prompt" hint="Optional — the Claude prompt used to generate this artifact">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="input min-h-[80px] resize-y"
-              placeholder="Create an interactive field manual for…"
-            />
-          </Field>
-
-          {/* HTML field with file upload button */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
-                HTML <span className="text-destructive">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                {fileName && (
-                  <span className="text-xs text-muted-foreground truncate max-w-[160px]">
-                    {fileName}
-                  </span>
-                )}
-                {/* Hidden file input — triggered by the button below */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".html,.htm"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+            <div className="flex items-center gap-2">
+              {fileInfo && (
+                <span
+                  style={{
+                    background: "var(--surface-3)",
+                    color: "var(--muted-foreground)",
+                  }}
+                  className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs"
                 >
-                  <Upload size={12} />
-                  Upload HTML file
-                </button>
-              </div>
+                  <span className="font-medium truncate max-w-[140px]">{fileInfo.name}</span>
+                  <span className="opacity-50">·</span>
+                  <span>{formatBytes(fileInfo.size)}</span>
+                </span>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".html,.htm"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: "1px solid var(--border-strong)",
+                  background: "var(--surface-2)",
+                  color: "var(--muted-foreground)",
+                }}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium hover:text-white hover:border-[#6366f1]/50 transition-colors"
+              >
+                <FileUp size={12} />
+                Upload .html file
+              </button>
             </div>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            style={
+              isDragging
+                ? {
+                    boxShadow: "0 0 0 2px var(--accent-color), 0 0 16px var(--accent-glow)",
+                    background: "var(--accent-glow)",
+                  }
+                : {}
+            }
+            className="relative rounded-lg transition-all"
+          >
+            {isDragging && (
+              <div
+                style={{ background: "var(--accent-glow)", color: "var(--accent-color)" }}
+                className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg"
+              >
+                <p className="text-sm font-medium">Drop .html file here</p>
+              </div>
+            )}
             <textarea
               value={html}
               onChange={(e) => setHtml(e.target.value)}
               className="input min-h-[240px] resize-y font-mono text-xs"
-              placeholder="Paste the full HTML here, or upload a file above…"
+              placeholder="Paste HTML here, or drag & drop / upload a file above…"
               required
             />
           </div>
+        </div>
 
-          <Button type="submit" disabled={status === "loading"} className="w-full">
-            {status === "loading" ? "Publishing…" : "Publish artifact"}
-          </Button>
-        </form>
-
-        {status === "done" && result && (
-          <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm">
-            <p className="font-medium text-green-800">Published successfully!</p>
-            <a
-              href={result.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 block break-all text-green-700 underline"
-            >
-              {result.url}
-            </a>
+        {/* Published toggle */}
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <div
+            onClick={() => setPublished((p) => !p)}
+            style={{
+              background: published ? "var(--accent-color)" : "var(--surface-3)",
+              boxShadow: published ? "0 0 8px var(--accent-glow)" : "none",
+            }}
+            className="relative h-5 w-9 rounded-full transition-all"
+          >
+            <span
+              className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform"
+              style={{ transform: published ? "translateX(1rem)" : "translateX(0.125rem)" }}
+            />
           </div>
-        )}
+          <span style={{ color: "var(--foreground)" }} className="text-sm">
+            {published ? "Published" : "Hidden (not visible in gallery)"}
+          </span>
+        </label>
 
-        {status === "error" && (
-          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm">
-            <p className="font-medium text-red-800">Error</p>
-            <p className="mt-1 text-red-700">{errorMsg}</p>
-          </div>
-        )}
-      </div>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          style={{
+            background: status === "loading" ? "var(--surface-3)" : "var(--accent-color)",
+            boxShadow: status === "loading" ? "none" : "0 0 16px var(--accent-glow)",
+            color: "white",
+          }}
+          className="w-full py-2.5 rounded-lg font-medium text-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {status === "loading" ? "Publishing…" : "Publish artifact"}
+        </button>
+      </form>
+
+      {/* Success state */}
+      {status === "done" && result && (
+        <div
+          style={{
+            border: "1px solid rgba(16,185,129,0.3)",
+            background: "rgba(16,185,129,0.08)",
+          }}
+          className="mt-6 rounded-xl p-4 text-sm"
+        >
+          <p style={{ color: "#10b981" }} className="font-medium">
+            Published successfully!
+          </p>
+          <a
+            href={result.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#34d399" }}
+            className="mt-1 block break-all hover:underline"
+          >
+            {result.url}
+          </a>
+        </div>
+      )}
+
+      {/* Error state */}
+      {status === "error" && (
+        <div
+          style={{
+            border: "1px solid rgba(239,68,68,0.3)",
+            background: "rgba(239,68,68,0.08)",
+          }}
+          className="mt-6 rounded-xl p-4 text-sm"
+        >
+          <p style={{ color: "var(--danger)" }} className="font-medium">
+            Error
+          </p>
+          <p style={{ color: "#f87171" }} className="mt-1">
+            {errorMsg}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -236,10 +366,18 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium">
+      <label style={{ color: "var(--foreground)" }} className="text-sm font-medium">
         {label}
-        {required && <span className="ml-0.5 text-destructive">*</span>}
-        {hint && <span className="ml-2 font-normal text-muted-foreground">{hint}</span>}
+        {required && (
+          <span style={{ color: "var(--danger)" }} className="ml-0.5">
+            *
+          </span>
+        )}
+        {hint && (
+          <span style={{ color: "var(--muted-foreground)" }} className="ml-2 font-normal">
+            {hint}
+          </span>
+        )}
       </label>
       {children}
     </div>

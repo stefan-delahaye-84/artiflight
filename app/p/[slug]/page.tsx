@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase-server";
 import { DeleteButton } from "@/components/DeleteButton";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -53,36 +54,67 @@ export default async function ArtifactPage({ params }: Props) {
   });
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Slim 40px header — one single row */}
-      <header className="h-10 shrink-0 border-b flex items-center gap-2 px-3 text-xs text-muted-foreground overflow-hidden">
+    <div
+      className="flex flex-col"
+      style={{ height: "calc(100vh - 3.5rem)" }}
+    >
+      {/* 48px header */}
+      <header
+        style={{
+          borderBottom: "1px solid var(--border)",
+          background: "var(--surface-1)",
+          height: "3rem",
+        }}
+        className="shrink-0 flex items-center gap-2 px-3 text-xs"
+      >
         <a
           href="/"
-          className="shrink-0 hover:text-foreground transition-colors font-medium"
+          style={{ color: "var(--accent-color)" }}
+          className="shrink-0 font-medium hover:opacity-80 transition-opacity flex items-center gap-1"
         >
           ← artiflight
         </a>
 
-        <span className="text-border select-none">|</span>
+        <span style={{ color: "var(--border-strong)" }} className="select-none" aria-hidden>
+          |
+        </span>
 
-        <span className="truncate font-medium text-foreground min-w-0">
+        <span
+          style={{ color: "var(--foreground)" }}
+          className="truncate font-medium min-w-0"
+        >
           {artifact.title}
         </span>
 
-        {/* Right side: meta + delete — never shrinks, pushes title left */}
+        {/* Right cluster */}
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {artifact.category && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+            <span
+              style={{
+                border: "1px solid rgba(99,102,241,0.2)",
+                color: "var(--accent-color)",
+                background: "var(--accent-glow)",
+              }}
+              className="text-[10px] font-mono px-2 py-0.5 rounded-full capitalize"
+            >
               {artifact.category}
             </span>
           )}
-          <span>{artifact.views + 1} views</span>
-          <span className="hidden sm:inline">{createdDate}</span>
-          <DeleteButton slug={slug} />
+
+          <span style={{ color: "var(--muted-foreground)" }}>
+            {artifact.views + 1} views
+          </span>
+
+          <span style={{ color: "var(--border-strong)" }} aria-hidden>·</span>
+
+          <span style={{ color: "var(--muted-foreground)" }}>{createdDate}</span>
+
+          <CopyLinkButton />
+          <DeleteButton slug={slug} title={artifact.title} />
         </div>
       </header>
 
-      {/* iframe fills remaining viewport height exactly */}
+      {/* iframe fills remaining height */}
       <main className="flex-1 overflow-hidden">
         <iframe
           srcDoc={artifact.html}
