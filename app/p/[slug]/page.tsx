@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase-server";
+import { DeleteButton } from "@/components/DeleteButton";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -43,58 +44,50 @@ export default async function ArtifactPage({ params }: Props) {
 
   if (!artifact) notFound();
 
-  // Fire-and-forget view increment (non-blocking).
   void incrementViews(artifact.id);
 
   const createdDate = new Date(artifact.created_at).toLocaleDateString("nl-BE", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b px-6 py-4 flex items-center justify-between">
-        <a href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
+      {/* Slim 40px header — one single row */}
+      <header className="h-10 shrink-0 border-b flex items-center gap-2 px-3 text-xs text-muted-foreground overflow-hidden">
+        <a
+          href="/"
+          className="shrink-0 hover:text-foreground transition-colors font-medium"
+        >
           ← artiflight
         </a>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+
+        <span className="text-border select-none">|</span>
+
+        <span className="truncate font-medium text-foreground min-w-0">
+          {artifact.title}
+        </span>
+
+        {/* Right side: meta + delete — never shrinks, pushes title left */}
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {artifact.category && (
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
               {artifact.category}
             </span>
           )}
           <span>{artifact.views + 1} views</span>
-          <span>{createdDate}</span>
+          <span className="hidden sm:inline">{createdDate}</span>
+          <DeleteButton slug={slug} />
         </div>
       </header>
 
-      <div className="border-b px-6 py-4">
-        <h1 className="text-xl font-semibold">{artifact.title}</h1>
-        {artifact.description && (
-          <p className="mt-1 text-sm text-muted-foreground">{artifact.description}</p>
-        )}
-        {artifact.tags && artifact.tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {artifact.tags.map((tag: string) => (
-              <span
-                key={tag}
-                className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <main className="flex-1">
-        {/* sandbox: allow-scripts lets the artifact run JS, but omitting
-            allow-same-origin prevents it from accessing parent cookies/storage. */}
+      {/* iframe fills remaining viewport height exactly */}
+      <main className="flex-1 overflow-hidden">
         <iframe
           srcDoc={artifact.html}
           sandbox="allow-scripts allow-forms allow-modals allow-popups"
-          className="w-full h-full min-h-[calc(100vh-130px)] border-0"
+          className="w-full h-full border-0"
           title={artifact.title}
         />
       </main>
