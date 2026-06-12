@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { html, title, description, tags, category, prompt, published } = body;
+  const { html, title, description, tags, category, prompt, model, published } = body;
 
   if (!html || !title) {
     return NextResponse.json(
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       description: description ?? null,
       html,
       prompt: prompt ?? null,
+      model: model ?? null,
       tags: tags ?? [],
       category: category ?? null,
       // Default true unless caller explicitly passes false.

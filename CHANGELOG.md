@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.1.0] — 2026-06-12
+
+### Added
+
+**Download**
+- `GET /api/artifact/[slug]/download` — returns the artifact HTML as a `Content-Disposition: attachment` file download
+- `DownloadButton` component — download icon in the artifact page header
+- Download icon on gallery cards (appears on hover, alongside "View →")
+
+**Model field**
+- `model` column on the `artifacts` table (nullable text; see migration note below)
+- Upload form now accepts a "Model" field (e.g. `claude-opus-4`, `gpt-4o`)
+- Artifact page header shows a `✦ model-name` chip next to the category badge (hidden below `sm` breakpoint)
+- Gallery cards show the model as a small monospace badge below the title when set
+
+**Edit panel**
+- Pencil icon in the artifact page header opens a dialog to edit title, description, category, tags, model, and prompt without touching the HTML
+- Requires admin secret; shows a "Saved!" confirmation then refreshes the page
+
+### Changed
+- `PATCH /api/artifact/[slug]` now handles three distinct paths: publish toggle, metadata update (title / description / category / tags / model / prompt), and HTML versioned update
+- `GET /api/artifact/[slug]` response now includes `model`
+- `ArtifactCard` extracted to `components/ArtifactCard.tsx` as a client component to support interactive download and card navigation
+
+### Database migration
+Run in the Supabase SQL Editor for existing databases:
+```sql
+ALTER TABLE artifacts ADD COLUMN IF NOT EXISTS model text;
+```
+
+---
+
 ## [1.0.0] — 2026-06-11
 
 First production-ready release. Includes the Space Indigo design system.

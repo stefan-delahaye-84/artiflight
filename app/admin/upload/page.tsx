@@ -16,6 +16,7 @@ export default function UploadPage() {
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState("");
   const [html, setHtml] = useState("");
   const [secret, setSecret] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -88,6 +89,7 @@ export default function UploadPage() {
           category: category || undefined,
           tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
           prompt: prompt || undefined,
+          model: model || undefined,
           html,
           published,
         }),
@@ -180,12 +182,22 @@ export default function UploadPage() {
           />
         </Field>
 
-        <Field label="Prompt" hint="Optional — the Claude prompt used to generate this artifact">
+        <Field label="Prompt" hint="Optional — the prompt used to generate this artifact">
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             className="input min-h-[80px] resize-y"
             placeholder="Create an interactive field manual for…"
+          />
+        </Field>
+
+        <Field label="Model" hint="Optional — AI model used to build this artifact">
+          <input
+            type="text"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="input font-mono"
+            placeholder="e.g. claude-opus-4, gpt-4o, gemini-2.0-flash"
           />
         </Field>
 
