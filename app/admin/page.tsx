@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, Upload, Loader2, Check, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Artifact = {
   id: string;
@@ -198,6 +204,7 @@ export default function AdminPage() {
 function ArtifactTable({
   title,
   items,
+  secret,
   toggling,
   onToggle,
 }: {
@@ -247,6 +254,7 @@ function ArtifactTable({
               <ArtifactRow
                 key={artifact.id}
                 artifact={artifact}
+                secret={secret}
                 toggling={toggling}
                 onToggle={onToggle}
                 isLast={i === items.length - 1}
@@ -261,15 +269,19 @@ function ArtifactTable({
 
 function ArtifactRow({
   artifact,
+  secret,
   toggling,
   onToggle,
   isLast,
 }: {
   artifact: Artifact;
+  secret: string;
   toggling: string | null;
   onToggle: (slug: string, current: boolean) => void;
   isLast: boolean;
 }) {
+  const [uploadOpen, setUploadOpen] = useState(false);
+
   const date = new Date(artifact.created_at).toLocaleDateString("nl-BE", {
     year: "numeric",
     month: "short",
@@ -277,95 +289,321 @@ function ArtifactRow({
   });
 
   return (
-    <tr
-      style={
-        isLast
-          ? { background: "transparent" }
-          : { borderBottom: "1px solid var(--border)", background: "transparent" }
-      }
-      className="hover:bg-white/[0.02] transition-colors"
-    >
-      <td className="px-4 py-3">
-        <div style={{ color: "var(--foreground)" }} className="font-medium truncate max-w-[200px]">
-          {artifact.title}
-        </div>
-        <div style={{ color: "var(--muted-foreground)" }} className="text-xs mt-0.5">
-          {date}
-        </div>
-      </td>
+    <>
+      <tr
+        style={
+          isLast
+            ? { background: "transparent" }
+            : { borderBottom: "1px solid var(--border)", background: "transparent" }
+        }
+        className="hover:bg-white/[0.02] transition-colors"
+      >
+        <td className="px-4 py-3">
+          <div style={{ color: "var(--foreground)" }} className="font-medium truncate max-w-[200px]">
+            {artifact.title}
+          </div>
+          <div style={{ color: "var(--muted-foreground)" }} className="text-xs mt-0.5">
+            {date}
+          </div>
+        </td>
 
-      <td className="px-4 py-3 hidden sm:table-cell">
-        {artifact.category ? (
-          <span style={{ color: "var(--muted-foreground)" }} className="text-xs capitalize">
-            {artifact.category}
-          </span>
-        ) : (
-          <span style={{ color: "var(--border-strong)" }} className="text-xs">
-            —
-          </span>
-        )}
-      </td>
+        <td className="px-4 py-3 hidden sm:table-cell">
+          {artifact.category ? (
+            <span style={{ color: "var(--muted-foreground)" }} className="text-xs capitalize">
+              {artifact.category}
+            </span>
+          ) : (
+            <span style={{ color: "var(--border-strong)" }} className="text-xs">
+              —
+            </span>
+          )}
+        </td>
 
-      <td className="px-4 py-3 hidden sm:table-cell">
-        <span style={{ color: "var(--muted-foreground)" }} className="text-xs">
-          {artifact.views}
-        </span>
-      </td>
-
-      <td className="px-4 py-3">
-        {artifact.published ? (
-          <span
-            style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
-            Published
+        <td className="px-4 py-3 hidden sm:table-cell">
+          <span style={{ color: "var(--muted-foreground)" }} className="text-xs">
+            {artifact.views}
           </span>
-        ) : (
-          <span
-            style={{ background: "var(--surface-3)", color: "var(--muted-foreground)" }}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />
-            Hidden
-          </span>
-        )}
-      </td>
+        </td>
 
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          {artifact.published && (
-            <a
-              href={`/p/${artifact.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
+        <td className="px-4 py-3">
+          {artifact.published ? (
+            <span
+              style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
+              Published
+            </span>
+          ) : (
+            <span
+              style={{ background: "var(--surface-3)", color: "var(--muted-foreground)" }}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />
+              Hidden
+            </span>
+          )}
+        </td>
+
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            {artifact.published && (
+              <a
+                href={`/p/${artifact.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  border: "1px solid var(--border-strong)",
+                  background: "var(--surface-2)",
+                  color: "var(--muted-foreground)",
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg hover:text-white hover:border-[#6366f1]/50 transition-colors"
+                title="View"
+              >
+                <ExternalLink size={13} />
+              </a>
+            )}
+
+            <button
+              onClick={() => setUploadOpen(true)}
+              title="Nieuwe versie"
               style={{
                 border: "1px solid var(--border-strong)",
                 background: "var(--surface-2)",
                 color: "var(--muted-foreground)",
               }}
               className="flex h-7 w-7 items-center justify-center rounded-lg hover:text-white hover:border-[#6366f1]/50 transition-colors"
-              title="View"
             >
-              <ExternalLink size={13} />
-            </a>
+              <Upload size={13} />
+            </button>
+
+            <button
+              onClick={() => onToggle(artifact.slug, artifact.published)}
+              disabled={toggling === artifact.slug}
+              title={artifact.published ? "Hide" : "Publish"}
+              style={{
+                border: "1px solid var(--border-strong)",
+                background: "var(--surface-2)",
+                color: "var(--muted-foreground)",
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg hover:text-white hover:border-[#6366f1]/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {artifact.published ? <EyeOff size={13} /> : <Eye size={13} />}
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      <UploadVersionDialog
+        slug={artifact.slug}
+        defaultSecret={secret}
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
+    </>
+  );
+}
+
+function UploadVersionDialog({
+  slug,
+  defaultSecret,
+  open,
+  onClose,
+}: {
+  slug: string;
+  defaultSecret: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [html, setHtml] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [note, setNote] = useState("");
+  const [secret, setSecret] = useState(defaultSecret);
+  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [dragging, setDragging] = useState(false);
+
+  function resetForm() {
+    setHtml("");
+    setFileName("");
+    setNote("");
+    setSecret(defaultSecret);
+    setStatus("idle");
+    setErrorMsg("");
+    setDragging(false);
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      resetForm();
+      onClose();
+    }
+  }
+
+  function readFile(file: File) {
+    if (!file.name.endsWith(".html")) {
+      setErrorMsg("Only .html files are supported.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setHtml((e.target?.result as string) ?? "");
+      setFileName(file.name);
+      setErrorMsg("");
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) readFile(file);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) readFile(file);
+  }
+
+  async function handleSubmit() {
+    if (!html || !note.trim() || !secret) return;
+    setStatus("uploading");
+    setErrorMsg("");
+
+    const res = await fetch(`/api/artifact/${slug}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": secret,
+      },
+      body: JSON.stringify({ html, note: note.trim() }),
+    });
+
+    if (res.ok) {
+      setStatus("success");
+      setTimeout(() => handleOpenChange(false), 800);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setErrorMsg(data.error ?? "Upload failed");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent showCloseButton={false} className="max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Nieuwe versie</DialogTitle>
+            <button
+              onClick={() => handleOpenChange(false)}
+              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-1">
+          {/* Drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById(`file-input-${slug}`)?.click()}
+            style={{
+              border: `2px dashed ${dragging ? "var(--accent-color)" : "var(--border-strong)"}`,
+              background: dragging ? "var(--accent-glow)" : "var(--surface-2)",
+              transition: "all 0.15s",
+              cursor: "pointer",
+            }}
+            className="rounded-lg p-6 flex flex-col items-center justify-center gap-2"
+          >
+            <Upload size={18} style={{ color: "var(--muted-foreground)" }} />
+            {fileName ? (
+              <span style={{ color: "var(--foreground)" }} className="text-sm font-medium">
+                {fileName}
+              </span>
+            ) : (
+              <span style={{ color: "var(--muted-foreground)" }} className="text-sm">
+                Drop .html or click to browse
+              </span>
+            )}
+            <input
+              id={`file-input-${slug}`}
+              type="file"
+              accept=".html"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </div>
+
+          {/* Note */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+              Note <span style={{ color: "var(--danger)" }}>*</span>
+              <span style={{ color: "var(--muted-foreground)" }} className="ml-1.5 font-normal">
+                {note.length}/100
+              </span>
+            </label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value.slice(0, 100))}
+              placeholder="Short description of this version"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
+          {/* Admin secret */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+              Admin secret <span style={{ color: "var(--danger)" }}>*</span>
+            </label>
+            <input
+              type="password"
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              placeholder="ADMIN_SECRET"
+            />
+          </div>
+
+          {errorMsg && (
+            <p className="text-xs" style={{ color: "var(--danger)" }}>
+              {errorMsg}
+            </p>
           )}
 
           <button
-            onClick={() => onToggle(artifact.slug, artifact.published)}
-            disabled={toggling === artifact.slug}
-            title={artifact.published ? "Hide" : "Publish"}
+            onClick={handleSubmit}
+            disabled={!html || !note.trim() || !secret || status === "uploading" || status === "success"}
             style={{
-              border: "1px solid var(--border-strong)",
-              background: "var(--surface-2)",
-              color: "var(--muted-foreground)",
+              background:
+                status === "success"
+                  ? "var(--success)"
+                  : status === "uploading"
+                  ? "var(--surface-3)"
+                  : "var(--accent-color)",
+              boxShadow:
+                status === "uploading" || status === "success"
+                  ? "none"
+                  : "0 0 12px var(--accent-glow)",
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg hover:text-white hover:border-[#6366f1]/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {artifact.published ? <EyeOff size={13} /> : <Eye size={13} />}
+            {status === "uploading" && <Loader2 size={14} className="animate-spin" />}
+            {status === "success" && <Check size={14} />}
+            {status === "uploading"
+              ? "Publiceren…"
+              : status === "success"
+              ? "Gepubliceerd!"
+              : "Versie publiceren"}
           </button>
         </div>
-      </td>
-    </tr>
+      </DialogContent>
+    </Dialog>
   );
 }

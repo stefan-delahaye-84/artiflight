@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json();
-  const { html, note, published, title, description, category, tags, model, prompt } = body as {
+  const { html, note, published, title, description, category, tags, model, prompt, active_version } = body as {
     html?: string;
     note?: string;
     published?: boolean;
@@ -40,9 +40,45 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     tags?: string[];
     model?: string;
     prompt?: string;
+    active_version?: number;
   };
 
   const supabase = createServerClient();
+
+  // --- Rollback to a specific version ---
+  if (active_version !== undefined) {
+    const { data: artifact, error: fetchError } = await supabase
+      .from("artifacts")
+      .select("id")
+      .eq("slug", slug)
+      .single();
+
+    if (fetchError || !artifact) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const { data: versionRow, error: versionError } = await supabase
+      .from("artifact_versions")
+      .select("html")
+      .eq("artifact_id", artifact.id)
+      .eq("version", active_version)
+      .single();
+
+    if (versionError || !versionRow) {
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    }
+
+    const { error: updateError } = await supabase
+      .from("artifacts")
+      .update({ html: versionRow.html, active_version, updated_at: new Date().toISOString() })
+      .eq("id", artifact.id);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, active_version });
+  }
 
   // --- Publish toggle ---
   if (published !== undefined && !html) {
@@ -70,7 +106,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true });
   }
 
-  // --- HTML update with versioning ---
+  // --- HTML update via atomic publish_new_version function ---
   const { data: artifact, error: fetchError } = await supabase
     .from("artifacts")
     .select("id")
@@ -81,33 +117,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { count } = await supabase
-    .from("artifact_versions")
-    .select("id", { count: "exact", head: true })
-    .eq("artifact_id", artifact.id);
+  const { data: nextVersion, error: rpcError } = await supabase.rpc("publish_new_version", {
+    p_artifact_id: artifact.id,
+    p_html: html,
+    p_note: note ?? null,
+  });
 
-  const nextVersion = (count ?? 0) + 1;
-
-  const { error: versionError } = await supabase
-    .from("artifact_versions")
-    .insert({
-      artifact_id: artifact.id,
-      html,
-      version: nextVersion,
-      note: note ?? null,
-    });
-
-  if (versionError) {
-    return NextResponse.json({ error: versionError.message }, { status: 500 });
-  }
-
-  const { error: updateError } = await supabase
-    .from("artifacts")
-    .update({ html, updated_at: new Date().toISOString() })
-    .eq("id", artifact.id);
-
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (rpcError) {
+    return NextResponse.json({ error: rpcError.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, version: nextVersion });
