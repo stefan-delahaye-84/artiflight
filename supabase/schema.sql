@@ -9,6 +9,7 @@ create table artifacts (
   description text,
   html        text not null,
   prompt      text,
+  model       text,
   tags        text[],
   category    text,
   views       integer default 0,
@@ -38,6 +39,9 @@ create policy "Public read"
   using (published = true);
 
 -- service_role bypasses RLS automatically — no write policy needed
+
+-- Migration: add model column to existing databases
+-- alter table artifacts add column if not exists model text;
 
 -- Atomic view counter, no race conditions
 create or replace function increment_views(artifact_id uuid)

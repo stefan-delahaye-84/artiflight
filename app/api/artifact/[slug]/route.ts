@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const { data, error } = await supabase
     .from("artifacts")
-    .select("id, slug, title, description, tags, category, views, prompt, created_at, updated_at")
+    .select("id, slug, title, description, tags, category, model, views, prompt, created_at, updated_at")
     .eq("slug", slug)
     .eq("published", true)
     .single();
@@ -30,15 +30,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json();
-  const { html, note, published } = body as {
+  const { html, note, published, title, description, category, tags, model, prompt } = body as {
     html?: string;
     note?: string;
     published?: boolean;
+    title?: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+    model?: string;
+    prompt?: string;
   };
 
   const supabase = createServerClient();
 
-  // --- Publish toggle (no HTML update, no versioning) ---
+  // --- Publish toggle ---
   if (published !== undefined && !html) {
     const { error } = await supabase
       .from("artifacts")
@@ -49,11 +55,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true, published });
   }
 
-  // --- HTML update with versioning ---
+  // --- Metadata update (title, description, category, tags, model, prompt) ---
   if (!html) {
-    return NextResponse.json({ error: "html or published is required" }, { status: 400 });
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (title !== undefined) update.title = title;
+    if (description !== undefined) update.description = description;
+    if (category !== undefined) update.category = category;
+    if (tags !== undefined) update.tags = tags;
+    if (model !== undefined) update.model = model;
+    if (prompt !== undefined) update.prompt = prompt;
+
+    const { error } = await supabase.from("artifacts").update(update).eq("slug", slug);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
   }
 
+  // --- HTML update with versioning ---
   const { data: artifact, error: fetchError } = await supabase
     .from("artifacts")
     .select("id")

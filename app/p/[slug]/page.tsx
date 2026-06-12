@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase-server";
 import { DeleteButton } from "@/components/DeleteButton";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { DownloadButton } from "@/components/DownloadButton";
+import { EditArtifactPanel } from "@/components/EditArtifactPanel";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +40,7 @@ export default async function ArtifactPage({ params }: Props) {
 
   const { data: artifact } = await supabase
     .from("artifacts")
-    .select("id, title, description, html, tags, category, views, created_at")
+    .select("id, title, description, html, tags, category, model, prompt, views, created_at")
     .eq("slug", slug)
     .eq("published", true)
     .single();
@@ -58,7 +60,7 @@ export default async function ArtifactPage({ params }: Props) {
       className="flex flex-col"
       style={{ height: "calc(100vh - 3.5rem)" }}
     >
-      {/* 48px header */}
+      {/* Header */}
       <header
         style={{
           borderBottom: "1px solid var(--border)",
@@ -101,6 +103,19 @@ export default async function ArtifactPage({ params }: Props) {
             </span>
           )}
 
+          {artifact.model && (
+            <span
+              style={{
+                background: "var(--surface-3)",
+                color: "var(--muted-foreground)",
+                border: "1px solid var(--border)",
+              }}
+              className="text-[10px] font-mono px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1"
+            >
+              ✦ {artifact.model}
+            </span>
+          )}
+
           <span style={{ color: "var(--muted-foreground)" }}>
             {artifact.views + 1} views
           </span>
@@ -109,7 +124,19 @@ export default async function ArtifactPage({ params }: Props) {
 
           <span style={{ color: "var(--muted-foreground)" }}>{createdDate}</span>
 
+          <DownloadButton slug={slug} />
           <CopyLinkButton />
+          <EditArtifactPanel
+            slug={slug}
+            artifact={{
+              title: artifact.title,
+              description: artifact.description,
+              category: artifact.category,
+              tags: artifact.tags,
+              model: artifact.model,
+              prompt: artifact.prompt,
+            }}
+          />
           <DeleteButton slug={slug} title={artifact.title} />
         </div>
       </header>

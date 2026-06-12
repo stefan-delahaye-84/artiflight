@@ -1,29 +1,20 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase-server";
+import { ArtifactCard } from "@/components/ArtifactCard";
+import type { ArtifactCardData } from "@/components/ArtifactCard";
 
 export const dynamic = "force-dynamic";
-
-type Artifact = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  tags: string[] | null;
-  category: string | null;
-  views: number;
-  created_at: string;
-};
 
 export default async function HomePage() {
   const supabase = createServerClient();
 
   const { data } = await supabase
     .from("artifacts")
-    .select("id, slug, title, description, tags, category, views, created_at")
+    .select("id, slug, title, description, tags, category, model, views, created_at")
     .eq("published", true)
     .order("created_at", { ascending: false });
 
-  const artifacts: Artifact[] = data ?? [];
+  const artifacts: ArtifactCardData[] = data ?? [];
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -174,100 +165,5 @@ export default async function HomePage() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function ArtifactCard({ artifact }: { artifact: Artifact }) {
-  const date = new Date(artifact.created_at).toLocaleDateString("nl-BE", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-
-  return (
-    <Link
-      href={`/p/${artifact.slug}`}
-      style={{
-        border: "1px solid var(--border)",
-        background: "var(--surface-1)",
-      }}
-      className="group block p-5 rounded-xl hover:border-[#6366f1]/50 hover:bg-[#16161f] transition-all duration-200 hover:shadow-lg"
-    >
-      {/* Category + views */}
-      <div className="flex items-start justify-between mb-3">
-        <span
-          style={{
-            border: "1px solid rgba(99,102,241,0.2)",
-            color: "var(--accent-color)",
-            background: "var(--accent-glow)",
-          }}
-          className="text-[10px] font-mono px-2 py-0.5 rounded-full capitalize"
-        >
-          {artifact.category ?? "artifact"}
-        </span>
-        {artifact.views > 0 && (
-          <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-            {artifact.views} views
-          </span>
-        )}
-      </div>
-
-      {/* Title */}
-      <h3
-        style={{ color: "var(--foreground)" }}
-        className="font-semibold mb-2 leading-snug line-clamp-2 group-hover:text-[#818cf8] transition-colors"
-      >
-        {artifact.title}
-      </h3>
-
-      {/* Description */}
-      {artifact.description && (
-        <p
-          style={{ color: "var(--muted-foreground)" }}
-          className="text-sm line-clamp-2 mb-4 leading-relaxed"
-        >
-          {artifact.description}
-        </p>
-      )}
-
-      {/* Tags */}
-      {artifact.tags && artifact.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-4">
-          {artifact.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              style={{
-                background: "var(--surface-3)",
-                color: "var(--muted-foreground)",
-              }}
-              className="text-[10px] px-2 py-0.5 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-          {artifact.tags.length > 3 && (
-            <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
-              +{artifact.tags.length - 3}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Footer row */}
-      <div
-        style={{ borderTop: "1px solid var(--border)" }}
-        className="pt-3 flex items-center justify-between"
-      >
-        <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-          {date}
-        </span>
-        <span
-          style={{ color: "var(--accent-color)" }}
-          className="text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          View →
-        </span>
-      </div>
-    </Link>
   );
 }

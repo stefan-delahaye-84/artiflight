@@ -22,11 +22,14 @@ Claude.ai can publish artifacts, but only to `claude.ai` URLs. Artiflight gives 
 ## Features
 
 - **Space Indigo design** — dark theme with indigo accent, neon glow, glassmorphism nav, dot-grid background
-- **Gallery** — hero section + artifact grid; cards show category, tags, views, date
+- **Gallery** — hero section + artifact grid; cards show category, model, tags, views, date
 - **Viewer** — artifact rendered in a sandboxed iframe, no escape from the frame
-- **Upload** — web UI with drag & drop, or API with `x-admin-secret`
+- **Download** — export any artifact as a `.html` file from the viewer or the gallery card
+- **Upload** — web UI with drag & drop, or API with `x-admin-secret`; includes prompt and model fields
+- **Edit info** — update title, description, category, tags, model, or prompt on any published artifact without touching the HTML
 - **Delete** — confirmation dialog with admin secret, redirect after delete
 - **Share** — copy link button with clipboard fallback
+- **Model tracking** — record which AI model built each artifact; shown as a chip in the viewer and on gallery cards
 - **Categories** — free-text input with autocomplete from existing categories
 - **Publish toggle** — publish or hide artifacts; admin overview with status badges
 - **Versioning** — every HTML update saves a version (schema ready)
@@ -69,6 +72,7 @@ create table artifacts (
   description text,
   html        text not null,
   prompt      text,
+  model       text,
   tags        text[],
   category    text,
   views       integer default 0,
@@ -155,7 +159,8 @@ Publish a new artifact.
   "description": "Interactive guide",    // optional
   "category": "hiking",                  // optional, free text
   "tags": ["koken", "survival"],         // optional
-  "prompt": "Create an interactive…",    // optional — the Claude prompt
+  "prompt": "Create an interactive…",    // optional — the prompt used
+  "model": "claude-opus-4",             // optional — AI model used to build it
   "published": true                      // optional, default true
 }
 ```
@@ -193,14 +198,33 @@ Get metadata for a single published artifact.
 
 ---
 
+### `GET /api/artifact/[slug]/download`
+
+Returns the artifact HTML as a file download (`Content-Disposition: attachment`).
+
+---
+
 ### `PATCH /api/artifact/[slug]`
 
-Two modes depending on the request body.
+Three modes depending on the request body.
 
-**Update HTML** (creates a new version):
+**Update HTML** (creates a new version in `artifact_versions`):
 
 ```json
 { "html": "<!DOCTYPE html>…", "note": "Fixed nav bug" }
+```
+
+**Update metadata** (title, description, category, tags, model, prompt — no version created):
+
+```jsonc
+{
+  "title": "New title",
+  "description": "Updated description",
+  "category": "tools",
+  "tags": ["interactive", "data-viz"],
+  "model": "claude-opus-4",
+  "prompt": "Build a…"
+}
 ```
 
 **Toggle published status** (no version created):
