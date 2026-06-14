@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { wrapTsx } from "@/lib/utils";
+import { wrapTsx } from "../../lib/utils";
 import { Eye, EyeOff, ExternalLink, Upload, Loader2, Check, X, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "../../components/ui/dialog";
 
 type Artifact = {
   id: string;
