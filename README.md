@@ -25,14 +25,15 @@ Claude.ai can publish artifacts, but only to `claude.ai` URLs. Artiflight gives 
 - **Gallery** — hero section + artifact grid; cards show category, model, tags, views, date
 - **Viewer** — artifact rendered in a sandboxed iframe, no escape from the frame
 - **Download** — export any artifact as a `.html` file from the viewer or the gallery card
-- **Upload** — web UI with drag & drop, or API with `x-admin-secret`; includes prompt and model fields
+- **Upload** — web UI with drag & drop; supports `.html` and `.tsx` files; includes prompt and model fields
+- **TSX artifacts** — `.tsx` files are wrapped at upload time in a self-contained HTML page (Babel Standalone + esm.sh CDN); supports React, lucide-react, and Tailwind out of the box
 - **Edit info** — update title, description, category, tags, model, or prompt on any published artifact without touching the HTML
-- **Delete** — confirmation dialog with admin secret, redirect after delete
+- **Delete** — confirmation dialog, redirect after delete
 - **Share** — copy link button with clipboard fallback
 - **Model tracking** — record which AI model built each artifact; shown as a chip in the viewer and on gallery cards
 - **Categories** — free-text input with autocomplete from existing categories
 - **Publish toggle** — publish or hide artifacts; admin overview with status badges
-- **Versioning** — every HTML update saves a version (schema ready)
+- **Versioning** — v1 is seeded on initial publish; every re-upload saves a new version; version picker in the viewer; non-active versions can be deleted by admin
 - **View counter** — atomic SQL increment, no race conditions
 
 ---
@@ -137,17 +138,36 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## API reference
 
-All write endpoints require the `x-admin-secret` header.
+Write endpoints require an authenticated admin session (httpOnly cookie set by `POST /api/admin/login`). The cookie is sent automatically by the browser — no headers to manage.
+
+### `POST /api/admin/login`
+
+Authenticate and set the admin cookie.
+
+**Body**
+
+```json
+{ "password": "your-admin-secret" }
+```
+
+**Response `200`** — sets `admin_token` (httpOnly) and `admin_session` (readable) cookies, both valid for 7 days.
+
+---
+
+### `POST /api/admin/logout`
+
+Clear the admin cookies.
+
+---
 
 ### `POST /api/publish`
 
-Publish a new artifact.
+Publish a new artifact. Requires admin cookie.
 
 **Headers**
 
 | Header | Required | Description |
 |---|---|---|
-| `x-admin-secret` | yes | Must match `ADMIN_SECRET` env var |
 | `Content-Type` | yes | `application/json` |
 
 **Body**
@@ -251,8 +271,7 @@ Returns a sorted, deduplicated list of all categories in use.
 
 ### `GET /api/admin/artifacts`
 
-Returns **all** artifacts, including unpublished ones.  
-Requires `x-admin-secret` header.
+Returns **all** artifacts, including unpublished ones. Requires admin cookie.
 
 ---
 
@@ -260,10 +279,10 @@ Requires `x-admin-secret` header.
 
 | URL | Purpose |
 |---|---|
-| `/admin` | Overview of all artifacts with status + publish toggle |
+| `/admin` | Overview of all artifacts with status, publish toggle, delete, and version re-upload |
 | `/admin/upload` | Upload form with drag & drop and file picker |
 
-The admin secret is stored in `sessionStorage` for the duration of the browser session.
+Authentication uses an **httpOnly cookie** — the secret is never readable by JavaScript, including any artifact running inside an iframe. Log in once; the session lasts 7 days. A "Sign out" button is available in the admin header.
 
 ---
 

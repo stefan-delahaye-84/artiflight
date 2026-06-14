@@ -51,7 +51,6 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
   const [displayedVersion, setDisplayedVersion] = useState<number | null>(null);
   const [versionLoading, setVersionLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminSecret, setAdminSecret] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -74,11 +73,8 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
   }, [slug]);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("admin_secret");
-    if (stored) {
-      setIsAdmin(true);
-      setAdminSecret(stored);
-    }
+    const authed = document.cookie.split(";").some((c) => c.trim() === "admin_session=1");
+    setIsAdmin(authed);
   }, []);
 
   async function handleVersionChange(version: number) {
@@ -100,7 +96,6 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
 
     const res = await fetch(`/api/artifact/${slug}/versions/${version}`, {
       method: "DELETE",
-      headers: { "x-admin-secret": adminSecret },
     });
 
     if (res.ok) {

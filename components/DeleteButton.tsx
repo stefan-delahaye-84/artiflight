@@ -17,24 +17,20 @@ import {
 
 export function DeleteButton({ slug, title }: { slug: string; title: string }) {
   const router = useRouter();
-  const [secret, setSecret] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   function reset() {
-    setSecret("");
     setError("");
     setLoading(false);
   }
 
   async function handleDelete() {
-    if (!secret) return;
     setLoading(true);
     setError("");
 
     const res = await fetch(`/api/artifact/${slug}`, {
       method: "DELETE",
-      headers: { "x-admin-secret": secret },
     });
 
     if (res.ok) {
@@ -64,19 +60,7 @@ export function DeleteButton({ slug, title }: { slug: string; title: string }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Admin secret</label>
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleDelete()}
-            placeholder="Voer je ADMIN_SECRET in"
-            autoFocus
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />} onClick={reset}>
@@ -85,7 +69,7 @@ export function DeleteButton({ slug, title }: { slug: string; title: string }) {
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={loading || !secret}
+            disabled={loading}
           >
             {loading ? "Verwijderen…" : "Verwijder"}
           </Button>

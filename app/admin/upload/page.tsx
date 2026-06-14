@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { CategoryInput } from "@/components/CategoryInput";
+import { wrapTsx } from "@/lib/utils";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -18,7 +19,6 @@ export default function UploadPage() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("");
   const [html, setHtml] = useState("");
-  const [secret, setSecret] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ url: string; slug: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -31,12 +31,14 @@ export default function UploadPage() {
   const dragCounter = useRef(0);
 
   function readFile(file: File) {
-    if (!file.name.match(/\.html?$/i)) return;
+    const isTsx = file.name.match(/\.tsx?$/i);
+    const isHtml = file.name.match(/\.html?$/i);
+    if (!isTsx && !isHtml) return;
     setFileInfo({ name: file.name, size: file.size });
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result;
-      if (typeof text === "string") setHtml(text);
+      if (typeof text === "string") setHtml(isTsx ? wrapTsx(text) : text);
     };
     reader.readAsText(file, "utf-8");
   }
@@ -81,7 +83,6 @@ export default function UploadPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": secret,
         },
         body: JSON.stringify({
           title,
@@ -135,17 +136,6 @@ export default function UploadPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-
-        <Field label="Admin secret" required>
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            className="input"
-            placeholder="Your ADMIN_SECRET"
-            required
-          />
-        </Field>
 
         <Field label="Title" required>
           <input
@@ -230,7 +220,7 @@ export default function UploadPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".html,.htm"
+                accept=".html,.htm,.tsx,.ts"
                 className="hidden"
                 onChange={handleFileChange}
               />
@@ -246,7 +236,7 @@ export default function UploadPage() {
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium hover:text-white hover:border-[#6366f1]/50 transition-colors"
               >
                 <FileUp size={12} />
-                Upload .html file
+                Upload .html / .tsx
               </button>
             </div>
           </div>
@@ -272,7 +262,7 @@ export default function UploadPage() {
                 style={{ background: "var(--accent-glow)", color: "var(--accent-color)" }}
                 className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg"
               >
-                <p className="text-sm font-medium">Drop .html file here</p>
+                <p className="text-sm font-medium">Drop .html or .tsx here</p>
               </div>
             )}
             <textarea

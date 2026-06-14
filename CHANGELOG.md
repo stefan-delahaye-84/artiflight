@@ -5,6 +5,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.0] — 2026-06-14
+
+### Added
+
+**TSX artifact support**
+- Upload `.tsx` files alongside `.html`; wrapped at upload time by `lib/utils.ts → wrapTsx()` into a self-contained HTML page
+- Wrapper injects Babel Standalone + Tailwind CDN; bare module specifiers (`react`, `lucide-react`, etc.) rewritten to absolute `esm.sh` URLs so they resolve from Babel's blob URL module context
+- `window.storage` (Claude artifact API) shimmed to `localStorage` automatically
+- Supported out of the box: React hooks, lucide-react icons, Tailwind CSS
+- File inputs and drag-and-drop zones in upload page and version re-upload dialog now accept `.tsx` / `.ts`
+
+**httpOnly cookie authentication**
+- `POST /api/admin/login` — verifies password against `ADMIN_SECRET`, sets `admin_token` (httpOnly, secure, SameSite=Strict, 7-day TTL) and `admin_session` (JS-readable flag, same TTL)
+- `POST /api/admin/logout` — clears both cookies
+- All admin-protected API routes now use `lib/admin-auth.ts → isAdminAuthed()` instead of `x-admin-secret` header
+- Admin secret is no longer readable by any JavaScript, including artifacts running in the iframe
+- Admin page auto-logs in on mount if `admin_session=1` cookie is present
+- Sign out button added to admin page header
+
+**Delete button in admin list**
+- Trash icon on each artifact row; confirm dialog uses the existing cookie session — no secret re-entry needed
+- Removes row from list on success without a page reload
+
+**Version seeding on initial publish**
+- `POST /api/publish` now seeds v1 in `artifact_versions` via `publish_new_version` RPC
+- Version picker appears immediately after first upload without requiring a re-upload
+
+### Changed
+- Admin login UI calls `POST /api/admin/login` instead of writing to `sessionStorage`
+- `ArtifactView` detects admin via `document.cookie` (`admin_session=1`) instead of `sessionStorage`
+- `DeleteButton`, admin upload page, and `UploadVersionDialog` no longer show an admin secret input field
+- Removed all `x-admin-secret` header sending from client code
+
+---
+
 ## [1.1.0] — 2026-06-12
 
 ### Added
