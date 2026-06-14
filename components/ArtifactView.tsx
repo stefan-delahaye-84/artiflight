@@ -47,7 +47,7 @@ function formatVersionDate(dateStr: string) {
 }
 
 export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
-  const { basePath } = useArtlightConfig();
+  const { basePath, brandName } = useArtlightConfig();
   const [currentHtml, setCurrentHtml] = useState(artifact.html);
   const [versions, setVersions] = useState<ArtifactVersion[]>([]);
   const [displayedVersion, setDisplayedVersion] = useState<number | null>(null);
@@ -132,7 +132,7 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
           style={{ color: "var(--accent-color)" }}
           className="shrink-0 font-medium hover:opacity-80 transition-opacity flex items-center gap-1"
         >
-          ← artiflight
+          ← {brandName}
         </a>
 
         <span style={{ color: "var(--border-strong)" }} className="select-none" aria-hidden>
