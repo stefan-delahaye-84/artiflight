@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { useArtlightConfig } from "../lib/config-context";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
 
 export function DeleteButton({ slug, title }: { slug: string; title: string }) {
   const router = useRouter();
+  const { basePath } = useArtlightConfig();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,12 +31,12 @@ export function DeleteButton({ slug, title }: { slug: string; title: string }) {
     setLoading(true);
     setError("");
 
-    const res = await fetch(`/api/artifact/${slug}`, {
+    const res = await fetch(`${basePath}/api/artifact/${slug}`, {
       method: "DELETE",
     });
 
     if (res.ok) {
-      router.push("/");
+      router.push(basePath || "/");
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Delete failed");

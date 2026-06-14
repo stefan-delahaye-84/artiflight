@@ -1,11 +1,14 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { useArtlightConfig } from "../lib/config-context";
 
 export function DownloadButton({ slug }: { slug: string }) {
+  const { basePath } = useArtlightConfig();
+
   function handleDownload() {
     const a = document.createElement("a");
-    a.href = `/api/artifact/${slug}/download`;
+    a.href = `${basePath}/api/artifact/${slug}/download`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { CategoryInput } from "../../../components/CategoryInput";
 import { wrapTsx } from "../../../lib/utils";
+import { useArtlightConfig } from "../../../lib/config-context";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -12,6 +13,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function UploadPage() {
+  const { basePath } = useArtlightConfig();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -79,7 +81,7 @@ export default function UploadPage() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("/api/publish", {
+      const res = await fetch(`${basePath}/api/publish`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,7 +120,7 @@ export default function UploadPage() {
       {/* Page header */}
       <div className="mb-10">
         <a
-          href="/"
+          href={basePath || "/"}
           style={{ color: "var(--accent-color)" }}
           className="text-sm hover:opacity-80 transition-opacity"
         >
