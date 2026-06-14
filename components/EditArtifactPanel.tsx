@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, X, Check, Loader2 } from "lucide-react";
+import { useArtlightConfig } from "../lib/config-context";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export function EditArtifactPanel({
   artifact: ArtifactMeta;
 }) {
   const router = useRouter();
+  const { basePath } = useArtlightConfig();
   const [open, setOpen] = useState(false);
   const [secret, setSecret] = useState("");
   const [title, setTitle] = useState(artifact.title);
@@ -52,7 +54,7 @@ export function EditArtifactPanel({
     setStatus("saving");
     setErrorMsg("");
 
-    const res = await fetch(`/api/artifact/${slug}`, {
+    const res = await fetch(`${basePath}/api/artifact/${slug}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useArtlightConfig } from "../lib/config-context";
 
 interface Props {
   value: string;
@@ -13,6 +14,7 @@ export function CategoryInput({
   onChange,
   placeholder = "hiking, food, tech…",
 }: Props) {
+  const { basePath } = useArtlightConfig();
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -23,11 +25,11 @@ export function CategoryInput({
 
   // Fetch existing categories once on mount.
   useEffect(() => {
-    fetch("/api/categories")
+    fetch(`${basePath}/api/categories`)
       .then((r) => r.json())
       .then((cats: string[]) => setAllCategories(cats))
       .catch(() => {});
-  }, []);
+  }, [basePath]);
 
   // Recompute suggestions whenever the value or focus state changes.
   useEffect(() => {

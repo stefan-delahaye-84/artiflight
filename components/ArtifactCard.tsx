@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Download } from "lucide-react";
+import { useArtlightConfig } from "../lib/config-context";
 
 export type ArtifactCardData = {
   id: string;
@@ -17,6 +18,7 @@ export type ArtifactCardData = {
 
 export function ArtifactCard({ artifact }: { artifact: ArtifactCardData }) {
   const router = useRouter();
+  const { basePath } = useArtlightConfig();
 
   const date = new Date(artifact.created_at).toLocaleDateString("nl-BE", {
     year: "numeric",
@@ -27,7 +29,7 @@ export function ArtifactCard({ artifact }: { artifact: ArtifactCardData }) {
   function handleDownload(e: React.MouseEvent) {
     e.stopPropagation();
     const a = document.createElement("a");
-    a.href = `/api/artifact/${artifact.slug}/download`;
+    a.href = `${basePath}/api/artifact/${artifact.slug}/download`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -35,10 +37,10 @@ export function ArtifactCard({ artifact }: { artifact: ArtifactCardData }) {
 
   return (
     <div
-      onClick={() => router.push(`/p/${artifact.slug}`)}
+      onClick={() => router.push(`${basePath}/p/${artifact.slug}`)}
       role="link"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && router.push(`/p/${artifact.slug}`)}
+      onKeyDown={(e) => e.key === "Enter" && router.push(`${basePath}/p/${artifact.slug}`)}
       style={{
         border: "1px solid var(--border)",
         background: "var(--surface-1)",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useArtlightConfig } from "../lib/config-context";
 import { Trash2, ChevronDown } from "lucide-react";
 import {
   Dialog,
@@ -46,6 +47,7 @@ function formatVersionDate(dateStr: string) {
 }
 
 export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
+  const { basePath } = useArtlightConfig();
   const [currentHtml, setCurrentHtml] = useState(artifact.html);
   const [versions, setVersions] = useState<ArtifactVersion[]>([]);
   const [displayedVersion, setDisplayedVersion] = useState<number | null>(null);
@@ -62,7 +64,7 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
   });
 
   useEffect(() => {
-    fetch(`/api/artifact/${slug}/versions`)
+    fetch(`${basePath}/api/artifact/${slug}/versions`)
       .then((r) => r.json())
       .then((data: ArtifactVersion[]) => {
         setVersions(data);
@@ -81,7 +83,7 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
     if (version === displayedVersion || versionLoading) return;
     setVersionLoading(true);
     try {
-      const res = await fetch(`/api/artifact/${slug}/versions/${version}`);
+      const res = await fetch(`${basePath}/api/artifact/${slug}/versions/${version}`);
       const data = await res.json();
       setCurrentHtml(data.html);
       setDisplayedVersion(version);
@@ -94,7 +96,7 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
     setDeleting(true);
     setDeleteError("");
 
-    const res = await fetch(`/api/artifact/${slug}/versions/${version}`, {
+    const res = await fetch(`${basePath}/api/artifact/${slug}/versions/${version}`, {
       method: "DELETE",
     });
 
@@ -126,7 +128,7 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
         className="shrink-0 flex items-center gap-2 px-3 text-xs"
       >
         <a
-          href="/"
+          href={basePath || "/"}
           style={{ color: "var(--accent-color)" }}
           className="shrink-0 font-medium hover:opacity-80 transition-opacity flex items-center gap-1"
         >

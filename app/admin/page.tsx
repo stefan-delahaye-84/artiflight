@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { wrapTsx } from "../../lib/utils";
+import { useArtlightConfig } from "../../lib/config-context";
 import { Eye, EyeOff, ExternalLink, Upload, Loader2, Check, X, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -21,6 +22,7 @@ type Artifact = {
 };
 
 export default function AdminPage() {
+  const { basePath } = useArtlightConfig();
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
@@ -39,7 +41,7 @@ export default function AdminPage() {
     setLoading(true);
     setError("");
 
-    const loginRes = await fetch("/api/admin/login", {
+    const loginRes = await fetch(`${basePath}/api/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
@@ -58,7 +60,7 @@ export default function AdminPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/admin/artifacts");
+    const res = await fetch(`${basePath}/api/admin/artifacts`);
 
     if (res.status === 401) {
       setAuthed(false);
@@ -79,7 +81,7 @@ export default function AdminPage() {
   }
 
   async function handleLogout() {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch(`${basePath}/api/admin/logout`, { method: "POST" });
     setAuthed(false);
     setArtifacts([]);
     setPassword("");
@@ -92,7 +94,7 @@ export default function AdminPage() {
   async function togglePublished(slug: string, current: boolean) {
     setToggling(slug);
 
-    const res = await fetch(`/api/artifact/${slug}`, {
+    const res = await fetch(`${basePath}/api/artifact/${slug}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ published: !current }),
@@ -173,7 +175,7 @@ export default function AdminPage() {
       >
         <div className="flex items-center gap-4">
           <a
-            href="/"
+            href={basePath || "/"}
             style={{ color: "var(--accent-color)" }}
             className="text-sm hover:opacity-80 transition-opacity"
           >
@@ -189,7 +191,7 @@ export default function AdminPage() {
             {publishedItems.length} published · {unpublishedItems.length} hidden
           </span>
           <a
-            href="/admin/upload"
+            href={`${basePath}/admin/upload`}
             style={{
               background: "var(--accent-color)",
               boxShadow: "0 0 10px var(--accent-glow)",
@@ -310,6 +312,7 @@ function ArtifactRow({
   onDelete: (slug: string) => void;
   isLast: boolean;
 }) {
+  const { basePath } = useArtlightConfig();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -324,7 +327,7 @@ function ArtifactRow({
   async function handleDelete() {
     setDeleting(true);
     setDeleteError("");
-    const res = await fetch(`/api/artifact/${artifact.slug}`, {
+    const res = await fetch(`${basePath}/api/artifact/${artifact.slug}`, {
       method: "DELETE",
     });
     if (res.ok) {
@@ -397,7 +400,7 @@ function ArtifactRow({
           <div className="flex items-center gap-2">
             {artifact.published && (
               <a
-                href={`/p/${artifact.slug}`}
+                href={`${basePath}/p/${artifact.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -507,6 +510,7 @@ function UploadVersionDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { basePath } = useArtlightConfig();
   const [html, setHtml] = useState("");
   const [fileName, setFileName] = useState("");
   const [note, setNote] = useState("");
@@ -565,7 +569,7 @@ function UploadVersionDialog({
     setStatus("uploading");
     setErrorMsg("");
 
-    const res = await fetch(`/api/artifact/${slug}`, {
+    const res = await fetch(`${basePath}/api/artifact/${slug}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html, note: note.trim() }),
