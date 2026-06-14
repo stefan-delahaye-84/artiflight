@@ -9,9 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "./ui/dialog";
 
-type ArtifactMeta = {
+export type ArtifactMeta = {
   title: string;
   description: string | null;
   category: string | null;

@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
-import { CategoryInput } from "@/components/CategoryInput";
-import { wrapTsx } from "@/lib/utils";
+import { CategoryInput } from "../../../components/CategoryInput";
+import { wrapTsx } from "../../../lib/utils";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

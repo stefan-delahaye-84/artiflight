@@ -7,20 +7,20 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "./ui/dialog";
 import { DownloadButton } from "./DownloadButton";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { EditArtifactPanel } from "./EditArtifactPanel";
 import { DeleteButton } from "./DeleteButton";
 
-interface ArtifactVersion {
+export interface ArtifactVersion {
   version: number;
   note: string | null;
   created_at: string;
   is_active: boolean;
 }
 
-interface ArtifactData {
+export interface ArtifactData {
   id: string;
   title: string;
   description: string | null;
@@ -33,7 +33,7 @@ interface ArtifactData {
   created_at: string;
 }
 
-interface ArtifactViewProps {
+export interface ArtifactViewProps {
   slug: string;
   artifact: ArtifactData;
 }
