@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, ExternalLink, Upload, Loader2, Check, X } from "lucide-react";
+import { wrapTsx } from "@/lib/utils";
+import { Eye, EyeOff, ExternalLink, Upload, Loader2, Check, X, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,32 +21,47 @@ type Artifact = {
 };
 
 export default function AdminPage() {
-  const [secret, setSecret] = useState("");
+  const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
 
-  // Restore secret from sessionStorage on mount.
+  // Auto-login if the session cookie is already set.
   useEffect(() => {
-    const stored = sessionStorage.getItem("admin_secret");
-    if (stored) {
-      setSecret(stored);
-      fetchArtifacts(stored);
-    }
+    const hasSession = document.cookie.split(";").some((c) => c.trim() === "admin_session=1");
+    if (hasSession) fetchArtifacts();
   }, []);
 
-  async function fetchArtifacts(s: string) {
+  async function handleLogin() {
+    if (!password) return;
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/admin/artifacts", {
-      headers: { "x-admin-secret": s },
+    const loginRes = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
     });
 
+    if (loginRes.status === 401) {
+      setError("Wrong password.");
+      setLoading(false);
+      return;
+    }
+
+    await fetchArtifacts();
+  }
+
+  async function fetchArtifacts() {
+    setLoading(true);
+    setError("");
+
+    const res = await fetch("/api/admin/artifacts");
+
     if (res.status === 401) {
-      setError("Wrong admin secret.");
+      setAuthed(false);
       setLoading(false);
       return;
     }
@@ -59,8 +75,18 @@ export default function AdminPage() {
     const data = await res.json();
     setArtifacts(data);
     setAuthed(true);
-    sessionStorage.setItem("admin_secret", s);
     setLoading(false);
+  }
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    setAuthed(false);
+    setArtifacts([]);
+    setPassword("");
+  }
+
+  function handleDelete(slug: string) {
+    setArtifacts((prev) => prev.filter((a) => a.slug !== slug));
   }
 
   async function togglePublished(slug: string, current: boolean) {
@@ -68,10 +94,7 @@ export default function AdminPage() {
 
     const res = await fetch(`/api/artifact/${slug}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": secret,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ published: !current }),
     });
 
@@ -100,16 +123,16 @@ export default function AdminPage() {
               Admin
             </h1>
             <p style={{ color: "var(--muted-foreground)" }} className="text-sm mt-1">
-              Enter your admin secret to continue.
+              Enter your password to continue.
             </p>
           </div>
 
           <input
             type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && fetchArtifacts(secret)}
-            placeholder="ADMIN_SECRET"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            placeholder="Password"
             className="input"
             autoFocus
           />
@@ -121,8 +144,8 @@ export default function AdminPage() {
           )}
 
           <button
-            onClick={() => fetchArtifacts(secret)}
-            disabled={loading || !secret}
+            onClick={handleLogin}
+            disabled={loading || !password}
             style={{
               background: "var(--accent-color)",
               boxShadow: "0 0 16px var(--accent-glow)",
@@ -176,6 +199,13 @@ export default function AdminPage() {
           >
             + Upload
           </a>
+          <button
+            onClick={handleLogout}
+            style={{ border: "1px solid var(--border-strong)", background: "var(--surface-2)", color: "var(--muted-foreground)" }}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium hover:text-white transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </div>
 
@@ -183,17 +213,17 @@ export default function AdminPage() {
         <ArtifactTable
           title="Published"
           items={publishedItems}
-          secret={secret}
           toggling={toggling}
           onToggle={togglePublished}
+          onDelete={handleDelete}
         />
         {unpublishedItems.length > 0 && (
           <ArtifactTable
             title="Hidden"
             items={unpublishedItems}
-            secret={secret}
             toggling={toggling}
             onToggle={togglePublished}
+            onDelete={handleDelete}
           />
         )}
       </div>
@@ -204,15 +234,15 @@ export default function AdminPage() {
 function ArtifactTable({
   title,
   items,
-  secret,
   toggling,
   onToggle,
+  onDelete,
 }: {
   title: string;
   items: Artifact[];
-  secret: string;
   toggling: string | null;
   onToggle: (slug: string, current: boolean) => void;
+  onDelete: (slug: string) => void;
 }) {
   if (items.length === 0) return null;
 
@@ -254,9 +284,9 @@ function ArtifactTable({
               <ArtifactRow
                 key={artifact.id}
                 artifact={artifact}
-                secret={secret}
                 toggling={toggling}
                 onToggle={onToggle}
+                onDelete={onDelete}
                 isLast={i === items.length - 1}
               />
             ))}
@@ -269,24 +299,42 @@ function ArtifactTable({
 
 function ArtifactRow({
   artifact,
-  secret,
   toggling,
   onToggle,
+  onDelete,
   isLast,
 }: {
   artifact: Artifact;
-  secret: string;
   toggling: string | null;
   onToggle: (slug: string, current: boolean) => void;
+  onDelete: (slug: string) => void;
   isLast: boolean;
 }) {
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const date = new Date(artifact.created_at).toLocaleDateString("nl-BE", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError("");
+    const res = await fetch(`/api/artifact/${artifact.slug}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      onDelete(artifact.slug);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setDeleteError(data.error ?? "Delete failed");
+      setDeleting(false);
+    }
+  }
 
   return (
     <>
@@ -390,35 +438,78 @@ function ArtifactRow({
             >
               {artifact.published ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
+
+            <button
+              onClick={() => { setDeleteOpen(true); setDeleteError(""); }}
+              title="Delete"
+              style={{
+                border: "1px solid var(--border-strong)",
+                background: "var(--surface-2)",
+                color: "var(--muted-foreground)",
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg hover:text-red-400 hover:border-red-500/50 transition-colors"
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
         </td>
       </tr>
 
       <UploadVersionDialog
         slug={artifact.slug}
-        defaultSecret={secret}
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
       />
+
+      <Dialog open={deleteOpen} onOpenChange={(open) => { if (!open) { setDeleteOpen(false); setDeleteError(""); } }}>
+        <DialogContent showCloseButton={false} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete artifact?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <p style={{ color: "var(--muted-foreground)" }} className="text-sm">
+              Delete <span style={{ color: "var(--foreground)" }} className="font-medium">{artifact.title}</span>? This cannot be undone.
+            </p>
+            {deleteError && (
+              <p className="text-xs" style={{ color: "var(--danger)" }}>{deleteError}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setDeleteOpen(false); setDeleteError(""); }}
+                disabled={deleting}
+                style={{ border: "1px solid var(--border-strong)", background: "var(--surface-2)", color: "var(--muted-foreground)" }}
+                className="px-3 py-1.5 rounded-lg text-sm hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ background: "var(--danger, #ef4444)", color: "white" }}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
 function UploadVersionDialog({
   slug,
-  defaultSecret,
   open,
   onClose,
 }: {
   slug: string;
-  defaultSecret: string;
   open: boolean;
   onClose: () => void;
 }) {
   const [html, setHtml] = useState("");
   const [fileName, setFileName] = useState("");
   const [note, setNote] = useState("");
-  const [secret, setSecret] = useState(defaultSecret);
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -427,7 +518,6 @@ function UploadVersionDialog({
     setHtml("");
     setFileName("");
     setNote("");
-    setSecret(defaultSecret);
     setStatus("idle");
     setErrorMsg("");
     setDragging(false);
@@ -441,13 +531,16 @@ function UploadVersionDialog({
   }
 
   function readFile(file: File) {
-    if (!file.name.endsWith(".html")) {
-      setErrorMsg("Only .html files are supported.");
+    const isTsx = file.name.match(/\.tsx?$/i);
+    const isHtml = file.name.match(/\.html?$/i);
+    if (!isTsx && !isHtml) {
+      setErrorMsg("Only .html or .tsx files are supported.");
       return;
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      setHtml((e.target?.result as string) ?? "");
+      const text = (e.target?.result as string) ?? "";
+      setHtml(isTsx ? wrapTsx(text) : text);
       setFileName(file.name);
       setErrorMsg("");
     };
@@ -468,16 +561,13 @@ function UploadVersionDialog({
   }
 
   async function handleSubmit() {
-    if (!html || !note.trim() || !secret) return;
+    if (!html || !note.trim()) return;
     setStatus("uploading");
     setErrorMsg("");
 
     const res = await fetch(`/api/artifact/${slug}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": secret,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html, note: note.trim() }),
     });
 
@@ -528,13 +618,13 @@ function UploadVersionDialog({
               </span>
             ) : (
               <span style={{ color: "var(--muted-foreground)" }} className="text-sm">
-                Drop .html or click to browse
+                Drop .html or .tsx, or click to browse
               </span>
             )}
             <input
               id={`file-input-${slug}`}
               type="file"
-              accept=".html"
+              accept=".html,.htm,.tsx,.ts"
               className="hidden"
               onChange={handleFileChange}
             />
@@ -557,20 +647,6 @@ function UploadVersionDialog({
             />
           </div>
 
-          {/* Admin secret */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
-              Admin secret <span style={{ color: "var(--danger)" }}>*</span>
-            </label>
-            <input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              placeholder="ADMIN_SECRET"
-            />
-          </div>
-
           {errorMsg && (
             <p className="text-xs" style={{ color: "var(--danger)" }}>
               {errorMsg}
@@ -579,7 +655,7 @@ function UploadVersionDialog({
 
           <button
             onClick={handleSubmit}
-            disabled={!html || !note.trim() || !secret || status === "uploading" || status === "success"}
+            disabled={!html || !note.trim() || status === "uploading" || status === "success"}
             style={{
               background:
                 status === "success"

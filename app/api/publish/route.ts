@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { generateSlug, uniqueSlug } from "@/lib/slug";
+import { isAdminAuthed } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-admin-secret");
-  if (secret !== process.env.ADMIN_SECRET) {
+  if (!(await isAdminAuthed())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -53,6 +53,13 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Seed the first version so the version picker appears immediately.
+  await supabase.rpc("publish_new_version", {
+    p_artifact_id: data.id,
+    p_html: html,
+    p_note: "Initial version",
+  });
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
 
