@@ -512,6 +512,7 @@ function UploadVersionDialog({
 }) {
   const { basePath } = useArtlightConfig();
   const [html, setHtml] = useState("");
+  const [source, setSource] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -520,6 +521,7 @@ function UploadVersionDialog({
 
   function resetForm() {
     setHtml("");
+    setSource(null);
     setFileName("");
     setNote("");
     setStatus("idle");
@@ -544,7 +546,13 @@ function UploadVersionDialog({
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = (e.target?.result as string) ?? "";
-      setHtml(isTsx ? wrapTsx(text) : text);
+      if (isTsx) {
+        setHtml(wrapTsx(text));
+        setSource(text);
+      } else {
+        setHtml(text);
+        setSource(null);
+      }
       setFileName(file.name);
       setErrorMsg("");
     };
@@ -572,7 +580,7 @@ function UploadVersionDialog({
     const res = await fetch(`${basePath}/api/artifact/${slug}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html, note: note.trim() }),
+      body: JSON.stringify({ html, source: source ?? undefined, note: note.trim() }),
     });
 
     if (res.ok) {

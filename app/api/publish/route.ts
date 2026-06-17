@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { html, title, description, tags, category, prompt, model, published } = body;
+  const { html, source, title, description, tags, category, prompt, model, published } = body;
 
   if (!html || !title) {
     return NextResponse.json(
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       title,
       description: description ?? null,
       html,
+      source: source ?? null,
       prompt: prompt ?? null,
       model: model ?? null,
       tags: tags ?? [],
@@ -55,11 +56,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Seed the first version so the version picker appears immediately.
-  await supabase.rpc("publish_new_version", {
+  const { data: v1 } = await supabase.rpc("publish_new_version", {
     p_artifact_id: data.id,
     p_html: html,
     p_note: "Initial version",
   });
+
+  if (source && v1) {
+    await supabase
+      .from("artifact_versions")
+      .update({ source })
+      .eq("artifact_id", data.id)
+      .eq("version", v1);
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
 

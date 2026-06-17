@@ -30,8 +30,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json();
-  const { html, note, published, title, description, category, tags, model, prompt, active_version } = body as {
+  const { html, source, note, published, title, description, category, tags, model, prompt, active_version } = body as {
     html?: string;
+    source?: string;
     note?: string;
     published?: boolean;
     title?: string;
@@ -125,6 +126,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   if (rpcError) {
     return NextResponse.json({ error: rpcError.message }, { status: 500 });
+  }
+
+  if (source !== undefined) {
+    await supabase.from("artifacts").update({ source }).eq("id", artifact.id);
+    if (nextVersion) {
+      await supabase
+        .from("artifact_versions")
+        .update({ source })
+        .eq("artifact_id", artifact.id)
+        .eq("version", nextVersion);
+    }
   }
 
   return NextResponse.json({ ok: true, version: nextVersion });
