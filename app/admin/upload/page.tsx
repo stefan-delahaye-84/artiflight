@@ -21,6 +21,7 @@ export default function UploadPage() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("");
   const [html, setHtml] = useState("");
+  const [source, setSource] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ url: string; slug: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -40,7 +41,15 @@ export default function UploadPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result;
-      if (typeof text === "string") setHtml(isTsx ? wrapTsx(text) : text);
+      if (typeof text === "string") {
+        if (isTsx) {
+          setHtml(wrapTsx(text));
+          setSource(text);
+        } else {
+          setHtml(text);
+          setSource(null);
+        }
+      }
     };
     reader.readAsText(file, "utf-8");
   }
@@ -94,6 +103,7 @@ export default function UploadPage() {
           prompt: prompt || undefined,
           model: model || undefined,
           html,
+          source: source ?? undefined,
           published,
         }),
       });
