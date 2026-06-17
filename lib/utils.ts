@@ -36,10 +36,21 @@ export function wrapTsx(tsxContent: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"><\/script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+  <script>
+    // Force classic JSX runtime so Babel does NOT inject "import ... from 'react/jsx-runtime'".
+    // That bare specifier would fail inside the blob URL module that Babel standalone creates,
+    // because blob URLs ignore import maps and bare specifiers are unresolvable there.
+    Babel.registerPreset('tsx-classic', {
+      presets: [
+        [Babel.availablePresets['react'], { runtime: 'classic' }],
+        Babel.availablePresets['typescript']
+      ]
+    });
+  <\/script>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-presets="react,typescript" data-type="module">
+  <script type="text/babel" data-presets="tsx-classic" data-type="module">
 import { createRoot } from 'https://esm.sh/react-dom@18/client';
 ${code}
 createRoot(document.getElementById('root')).render(<${componentName} />);
