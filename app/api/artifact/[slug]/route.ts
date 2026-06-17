@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const { data: versionRow, error: versionError } = await supabase
       .from("artifact_versions")
-      .select("html")
+      .select("html, source")
       .eq("artifact_id", artifact.id)
       .eq("version", active_version)
       .single();
@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const { error: updateError } = await supabase
       .from("artifacts")
-      .update({ html: versionRow.html, active_version, updated_at: new Date().toISOString() })
+      .update({ html: versionRow.html, source: versionRow.source ?? null, active_version, updated_at: new Date().toISOString() })
       .eq("id", artifact.id);
 
     if (updateError) {
