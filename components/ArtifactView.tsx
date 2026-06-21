@@ -80,8 +80,17 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
   }, []);
 
   useEffect(() => {
+    const html = document.documentElement;
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.overscrollBehavior = "none";
+    return () => {
+      html.style.overflow = "";
+      html.style.overscrollBehavior = "";
+      document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+    };
   }, []);
 
   async function handleVersionChange(version: number) {
@@ -123,7 +132,7 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 3.5rem)" }}>
       <header
         style={{
           borderBottom: "1px solid var(--border)",
