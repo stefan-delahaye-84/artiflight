@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.3] — 2026-06-21
+
+### Fixed
+- `ArtifactView`: use `100dvh` instead of `100vh` so the container height matches the actual visible viewport on mobile (fixes iOS Safari rubber-band scroll revealing the footer when swiping or zooming)
+- `ArtifactView`: extend scroll lock to `<html>` element and add `overscroll-behavior: none` on both `html` and `body` — prevents iOS Safari bounce scroll from revealing content outside the viewer
+
+---
+
 ## [1.3.2] — 2026-06-21
 
 ### Fixed
