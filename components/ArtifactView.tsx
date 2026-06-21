@@ -79,6 +79,11 @@ export function ArtifactView({ slug, artifact }: ArtifactViewProps) {
     setIsAdmin(authed);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   async function handleVersionChange(version: number) {
     if (version === displayedVersion || versionLoading) return;
     setVersionLoading(true);

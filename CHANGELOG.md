@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.2] — 2026-06-21
+
+### Fixed
+- `ArtifactView`: lock `document.body.overflow` to `hidden` on mount (restored on unmount) — prevents the host page from scrolling past the artifact viewer and revealing the footer below it
+
+---
+
+## [1.3.1] — 2026-06-17
+
+### Added
+- `lib/utils.ts` (`wrapTsx`): improved JSX runtime shim — fixes module resolution for the React JSX transform inside Babel Standalone's blob-URL module context
+
+### Changed
+- `POST /api/publish` and the version re-upload path now store the original `.tsx` source alongside the wrapped HTML in a `source` column
+- `GET /api/artifact/[slug]/download` returns the original `.tsx` file when the artifact was uploaded as TSX (`Content-Type: text/plain`, filename `<slug>.tsx`); HTML artifacts still download as `.html`
+- `GET /api/artifact/[slug]` response includes `source_type` (`tsx` | `html`)
+
+### Fixed
+- Version rollback (`PATCH /api/artifact/[slug]`) now correctly restores both HTML and source from `artifact_versions` instead of reading stale values from the artifact row
+
+---
+
+## [1.3.0] — 2026-06-14
+
+### Added
+
+**Package embeddability**
+- `package.json` exports map — consumers can import subpaths: `artiflight/components`, `artiflight/lib`, `artiflight/admin`, `artiflight/styles`, `artiflight/types`
+- Shared `types.ts` with exported `Artifact` and `ArtifactVersion` interfaces
+- `lib/config.ts` + `components/config-context.tsx` — `ArtlightConfig` interface, `ArtlightProvider` context component, and `useArtlightConfig()` hook
+- `basePath` config prop: all API fetches and navigation hrefs are prefixed with `basePath`, allowing artiflight to be mounted at any sub-path inside a host app (default `""` keeps standalone behavior unchanged)
+- `brandName` config prop: overrides the `← artiflight` back-link label in `ArtifactView` for host apps (e.g. `rawdepth`)
+- All `@/` aliases inside exported files replaced with relative paths so they resolve correctly when consumed via `transpilePackages`
+- `INTEGRATION.md` — full integration guide covering: local install, `transpilePackages` config, theme import, `ArtlightProvider` setup, page and API route mounting, individual component/lib imports, environment variables, Supabase schema, and the complete exports map
+
+---
+
 ## [1.2.0] — 2026-06-14
 
 ### Added
