@@ -1,10 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileUp } from "lucide-react";
+import { FileUp, Lock } from "lucide-react";
 import { CategoryInput } from "../../../components/CategoryInput";
 import { wrapTsx } from "../../../lib/utils";
 import { useArtlightConfig } from "../../../lib/config-context";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -28,6 +34,10 @@ export default function UploadPage() {
   const [published, setPublished] = useState(true);
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Counter avoids false drag-leave when pointer moves over a child element.
@@ -85,6 +95,40 @@ export default function UploadPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const hasSession = document.cookie.split(";").some((c) => c.trim() === "admin_session=1");
+    if (!hasSession) {
+      setAuthError("");
+      setAuthPassword("");
+      setShowAuthDialog(true);
+      return;
+    }
+    await doUpload();
+  }
+
+  async function handleAuthConfirm() {
+    if (!authPassword) return;
+    setAuthLoading(true);
+    setAuthError("");
+
+    const loginRes = await fetch(`${basePath}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: authPassword }),
+    });
+
+    if (loginRes.status === 401) {
+      setAuthError("Wrong password.");
+      setAuthLoading(false);
+      return;
+    }
+
+    setAuthLoading(false);
+    setShowAuthDialog(false);
+    setAuthPassword("");
+    await doUpload();
+  }
+
+  async function doUpload() {
     setStatus("loading");
     setResult(null);
     setErrorMsg("");
@@ -363,6 +407,54 @@ export default function UploadPage() {
           </p>
         </div>
       )}
+
+      {/* Password dialog */}
+      <Dialog open={showAuthDialog} onOpenChange={(open) => { if (!open) setShowAuthDialog(false); }}>
+        <DialogContent showCloseButton={false} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock size={15} style={{ color: "var(--accent-color)" }} />
+              Enter password to upload
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <input
+              type="password"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAuthConfirm()}
+              placeholder="Admin password"
+              className="input"
+              autoFocus
+            />
+            {authError && (
+              <p className="text-xs" style={{ color: "var(--danger)" }}>{authError}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowAuthDialog(false)}
+                disabled={authLoading}
+                style={{ border: "1px solid var(--border-strong)", background: "var(--surface-2)", color: "var(--muted-foreground)" }}
+                className="px-3 py-1.5 rounded-lg text-sm hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAuthConfirm}
+                disabled={!authPassword || authLoading}
+                style={{
+                  background: "var(--accent-color)",
+                  boxShadow: "0 0 12px var(--accent-glow)",
+                  color: "white",
+                }}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {authLoading ? "Checking…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

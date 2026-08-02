@@ -417,7 +417,7 @@ function ArtifactRow({
 
             <button
               onClick={() => setUploadOpen(true)}
-              title="Nieuwe versie"
+              title="Upload artifact"
               style={{
                 border: "1px solid var(--border-strong)",
                 background: "var(--surface-2)",
@@ -598,7 +598,7 @@ function UploadVersionDialog({
       <DialogContent showCloseButton={false} className="max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Nieuwe versie</DialogTitle>
+            <DialogTitle>Upload artifact</DialogTitle>
             <button
               onClick={() => handleOpenChange(false)}
               className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -685,10 +685,10 @@ function UploadVersionDialog({
             {status === "uploading" && <Loader2 size={14} className="animate-spin" />}
             {status === "success" && <Check size={14} />}
             {status === "uploading"
-              ? "Publiceren…"
+              ? "Uploading…"
               : status === "success"
-              ? "Gepubliceerd!"
-              : "Versie publiceren"}
+              ? "Uploaded!"
+              : "Upload"}
           </button>
         </div>
       </DialogContent>
