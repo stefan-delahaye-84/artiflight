@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./space-indigo.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -32,50 +33,9 @@
 }
 
 /* ─── Space Indigo Dark Theme ─────────────────────────────── */
-:root {
-  --radius: 0.5rem;
-
-  /* Core surfaces */
-  --background: #0a0a0f;
-  --foreground: #e2e8f0;
-  --surface-1: #111118;
-  --surface-2: #16161f;
-  --surface-3: #1e1e2e;
-
-  /* Accent / neon */
-  --accent-color:    #6366f1;
-  --accent-hover:    #818cf8;
-  --accent-glow:     rgba(99, 102, 241, 0.15);
-  --neon:            #22d3ee;
-  --neon-glow:       rgba(34, 211, 238, 0.15);
-
-  /* Status */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger:  #ef4444;
-
-  /* Borders */
-  --border-strong: #2d2d3f;
-
-  /* ── shadcn-compatible variable names (used by Dialog, Button, etc.) ── */
-  --card:                  #111118;
-  --card-foreground:       #e2e8f0;
-  --popover:               #111118;
-  --popover-foreground:    #e2e8f0;
-  --primary:               #6366f1;
-  --primary-foreground:    #ffffff;
-  --secondary:             #1e1e2e;
-  --secondary-foreground:  #94a3b8;
-  --muted:                 #1e1e2e;   /* used as subtle bg in shadcn components */
-  --muted-foreground:      #94a3b8;
-  --accent:                #6366f1;
-  --accent-foreground:     #ffffff;
-  --destructive:           #ef4444;
-  --destructive-foreground:#ffffff;
-  --border:                #1e1e2e;
-  --input:                 #16161f;
-  --ring:                  #6366f1;
-}
+/* The colors and tokens live in the style note (OneDrive/Documents/07 IT/Style/Space Indigo.md).
+   space-indigo.css is generated from it by code_personal/localapp: do not edit it here,
+   change the note and run `uv run python -m localapp.style sync` in code_personal. */
 
 /* ─── Base ────────────────────────────────────────────────── */
 * {
@@ -90,7 +50,7 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
